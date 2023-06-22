@@ -2,16 +2,18 @@ import { FieldValidationError, ValidationError } from 'express-validator';
 import { CustomError } from './custom-error';
 
 export class BadRequestError extends CustomError {
-    statusCode = 400;
+  statusCode = 400;
 
-    constructor(public message: string, public errors: FieldValidationError[]) {
-        super(message);
-    }
+  constructor(public message: string, public errors?: FieldValidationError[]) {
+    super(message);
+  }
 
-    serializeErrors() {
-        return this.errors.map((err) => ({
-            message: err.msg,
-            field: err.path
+  serializeErrors() {
+    return this.errors
+      ? this.errors.map((err) => ({
+          message: err.msg,
+          field: err.path,
         }))
-    }
+      : [{ message: this.message }];
+  }
 }
