@@ -1,4 +1,5 @@
 import express from 'express';
+import 'express-async-errors';
 import { errorHandler } from './middlewares/error-handler';
 import { NotFoundError } from './errors/not-found-error';
 import { identifyRouter } from './routes/identify';
