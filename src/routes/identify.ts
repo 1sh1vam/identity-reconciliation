@@ -1,8 +1,8 @@
-import express, { Response } from 'express';
+import express, { NextFunction, Response } from 'express';
 import { body } from 'express-validator';
 import { TypedRequestBody } from '../types/request';
 import { BadRequestError } from '../errors/bad-request-error';
-import { getContactRows, createContact } from '../services/identify';
+import { getContactRows, createContact, manageContacts } from '../services/identify';
 import { IContactRecord } from '../types/contact';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.post(
             .isNumeric()
             .withMessage('Phone number must be numeric')
     ],
-    async (req: TypedRequestBody<IdentifyBodyT>, res: Response) => {
+    async (req: TypedRequestBody<IdentifyBodyT>, res: Response, next: NextFunction) => {
         const { email, phoneNumber } = req.body;
 
         if (!(email || phoneNumber)) {
@@ -36,8 +36,9 @@ router.post(
         let contacts: IContactRecord[] = [];
         if (!existingContacts.length) {
             contacts = await createContact(email, phoneNumber);
+        } else {
+            contacts = await manageContacts(existingContacts, email, phoneNumber);
         }
-
         res.status(200).send({
             contacts
         });

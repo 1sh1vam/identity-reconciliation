@@ -52,3 +52,105 @@ export const createContact = async (emailId?: string, phoneNumber?: number, link
     return rows as IContactRecord[];
 }
 
+export const turnPrimaryContactToSecondary = async (contact1: IContactRecord, contact2: IContactRecord, contacts: IContactRecord[]) => {
+    const contact1CAt = new Date(contact1.createdAt);
+    const conract2CAt = new Date(contact2.createdAt);
+
+    let primaryRowId: number;
+    let secondaryRowId: number;
+
+    if (contact1CAt < conract2CAt) {
+        contact1.linkPrecedence = 'primary';
+        contact2.linkPrecedence = 'secondary';
+        contact2.linkedId = contact1.id;
+        primaryRowId = contact1.id;
+        secondaryRowId = contact2.id;
+    } else {
+        contact2.linkPrecedence = 'primary';
+        contact1.linkPrecedence = 'secondary';
+        contact1.linkedId = contact2.id;
+        primaryRowId = contact2.id;
+        secondaryRowId = contact1.id;
+    }
+
+    await db.client.beginTransaction();
+
+    const promise1 = db.client.query(
+        `UPDATE bite_speed.contacts SET linkPrecedence = 'primary' where id = ?`,
+        [primaryRowId]
+    );
+    const promise2 = db.client.query(
+        `UPDATE bite_speed.contacts SET linkPrecedence = 'secondary', linkedId = ? where id = ?`,
+        [primaryRowId, secondaryRowId]
+    )
+
+    await Promise.all([promise1, promise2]);
+
+    await db.client.commit();
+
+    return contacts.map((contact) => {
+        if (contact.id === contact1.id) return contact1;
+        if (contact.id === contact2.id) return contact2;
+        return contact;
+    });
+}
+
+export const manageContacts = async (contacts: IContactRecord[], email?: string, phoneNumber?: number) => {
+    let emailRow: IContactRecord | undefined;
+    let phoneRow: IContactRecord | undefined;
+
+    // Get the rows having the email or phone;
+    for (const contact of contacts) {
+        if (email && phoneNumber && contact.email === email && contact.phoneNumber === phoneNumber) {
+            emailRow = contact;
+            phoneRow = contact;
+            break;
+        }
+
+        if (!emailRow && email && contact.email === email) {
+            emailRow = contact;
+        }
+
+        if (!phoneRow && phoneNumber && contact.phoneNumber === phoneNumber) {
+            phoneRow = contact;
+        }
+    }
+
+    // If only a record with email or phone number exists
+    if ((email && !emailRow) || (phoneNumber && !phoneRow)) {
+        const recordToBeUpdated = (emailRow || phoneRow)!;
+        // If the record does not have either an email or phone number then update the current row
+        // with the new data
+        if (!(recordToBeUpdated.email && recordToBeUpdated.phoneNumber)) {
+            const fieldToUpdate = recordToBeUpdated.email ? 'phoneNumber' : 'email';
+            const updatedFieldVal = recordToBeUpdated.email ? phoneNumber : email;
+
+            // If the missing field (email | phoneNumber) in db is again sent null in request
+            if (!updatedFieldVal) return contacts;
+            console.log('query text', `UPDATE bite_speed.contacts SET ${fieldToUpdate} = ? where id = ?`)
+            await db.client.query(
+                `UPDATE bite_speed.contacts SET ${fieldToUpdate} = ? where id = ?`,
+                [updatedFieldVal, recordToBeUpdated.id]
+            )
+
+            recordToBeUpdated[fieldToUpdate] = updatedFieldVal as any;
+
+            return contacts.map((contact) => contact.id === recordToBeUpdated.id ? recordToBeUpdated : contact);
+        } else {
+            // create secondary contact
+            const [secondaryContact] = await createContact(
+                email,
+                phoneNumber,
+                'secondary',
+                recordToBeUpdated.id
+            );
+
+            return [ ...contacts, secondaryContact ]
+        }
+    } else if (emailRow && phoneRow && emailRow.email !== phoneRow.email && emailRow.phoneNumber !== phoneRow.phoneNumber) {
+        // update the link precedence
+        return turnPrimaryContactToSecondary(emailRow, phoneRow, contacts);
+    }
+
+    return contacts;
+}
