@@ -56,43 +56,58 @@ export const turnPrimaryContactToSecondary = async (contact1: IContactRecord, co
     const contact1CAt = new Date(contact1.createdAt);
     const conract2CAt = new Date(contact2.createdAt);
 
-    let primaryRowId: number;
-    let secondaryRowId: number;
+    let primaryContactId: number;
+    let secondaryContactId: number;
 
     if (contact1CAt < conract2CAt) {
         contact1.linkPrecedence = 'primary';
         contact2.linkPrecedence = 'secondary';
         contact2.linkedId = contact1.id;
-        primaryRowId = contact1.id;
-        secondaryRowId = contact2.id;
+        primaryContactId = contact1.id;
+        secondaryContactId = contact2.id;
     } else {
         contact2.linkPrecedence = 'primary';
         contact1.linkPrecedence = 'secondary';
         contact1.linkedId = contact2.id;
-        primaryRowId = contact2.id;
-        secondaryRowId = contact1.id;
+        primaryContactId = contact2.id;
+        secondaryContactId = contact1.id;
     }
 
     await db.client.beginTransaction();
 
     const promise1 = db.client.query(
         `UPDATE bite_speed.contacts SET linkPrecedence = 'primary' where id = ?`,
-        [primaryRowId]
+        [primaryContactId]
     );
     const promise2 = db.client.query(
         `UPDATE bite_speed.contacts SET linkPrecedence = 'secondary', linkedId = ? where id = ?`,
-        [primaryRowId, secondaryRowId]
+        [primaryContactId, secondaryContactId]
     )
 
     await Promise.all([promise1, promise2]);
 
     await db.client.commit();
 
-    return contacts.map((contact) => {
-        if (contact.id === contact1.id) return contact1;
-        if (contact.id === contact2.id) return contact2;
-        return contact;
+    const modifiedContacts: IContactRecord[] = [];
+
+    // These are the ids that are related to another primary id when user gives an email of primary contact id and
+    // phone number of a record which is linked to another primary id
+    const idsToBeFiltered: number[] = [];
+    contacts.forEach((contact) => {
+        if (contact.linkPrecedence === 'primary' && contact.id !== primaryContactId) idsToBeFiltered.push(contact.id);
+
+        if (contact.linkedId && idsToBeFiltered.includes(contact.linkedId)) {
+            idsToBeFiltered.push(contact.id);
+        }
     });
+
+    // Only return the contacts related to new primary contact
+    contacts.forEach((contact) => {
+        if (contact.id === contact1.id) modifiedContacts.push(contact1);
+        else if (contact.id === contact2.id) modifiedContacts.push(contact2);
+        else if (!idsToBeFiltered.includes(contact.id)) modifiedContacts.push(contact);
+    })
+    return modifiedContacts;
 }
 
 export const manageContacts = async (contacts: IContactRecord[], email?: string, phoneNumber?: number) => {
@@ -127,7 +142,6 @@ export const manageContacts = async (contacts: IContactRecord[], email?: string,
 
             // If the missing field (email | phoneNumber) in db is again sent null in request
             if (!updatedFieldVal) return contacts;
-            console.log('query text', `UPDATE bite_speed.contacts SET ${fieldToUpdate} = ? where id = ?`)
             await db.client.query(
                 `UPDATE bite_speed.contacts SET ${fieldToUpdate} = ? where id = ?`,
                 [updatedFieldVal, recordToBeUpdated.id]
