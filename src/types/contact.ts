@@ -8,3 +8,12 @@ export interface IContactRecord {
     updatedAt: string;
     deletedAt?: string;
 }
+
+export interface IContactReponse {
+  contact: {
+    primaryContatctId: number;
+    emails: string[];
+    phoneNumbers: number[];
+    secondaryContactIds: number[];
+  };
+}

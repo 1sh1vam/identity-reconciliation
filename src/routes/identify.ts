@@ -2,7 +2,7 @@ import express, { NextFunction, Response } from 'express';
 import { body } from 'express-validator';
 import { TypedRequestBody } from '../types/request';
 import { BadRequestError } from '../errors/bad-request-error';
-import { getContactRows, createContact, manageContacts } from '../services/identify';
+import { getContactRows, createContact, manageContacts, constructContactResponse } from '../services/identify';
 import { IContactRecord } from '../types/contact';
 
 const router = express.Router();
@@ -39,9 +39,9 @@ router.post(
         } else {
             contacts = await manageContacts(existingContacts, email, phoneNumber);
         }
-        res.status(200).send({
-            contacts
-        });
+
+        const contactsResponse = constructContactResponse(contacts);
+        res.status(200).send(contactsResponse);
     }
 );
 

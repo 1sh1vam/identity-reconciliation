@@ -1,6 +1,6 @@
 import { ResultSetHeader } from "mysql2";
 import { db } from "../db";
-import { IContactRecord } from "../types/contact";
+import { IContactRecord, IContactReponse } from "../types/contact";
 
 export const getContactRows = async (email?: string, phoneNumber?: number) => {
     let conditionalQuery = '';
@@ -153,4 +153,26 @@ export const manageContacts = async (contacts: IContactRecord[], email?: string,
     }
 
     return contacts;
+}
+
+export const constructContactResponse = (contacts: IContactRecord[]) => {
+    const contactRes: IContactReponse['contact'] = {
+        phoneNumbers: [],
+        emails: [],
+        primaryContatctId: 0,
+        secondaryContactIds: []
+    };
+    contacts.forEach((contact) => {
+        if (contact.linkPrecedence === 'primary') {
+            contactRes.primaryContatctId = contact.id;
+            contact.phoneNumber && contactRes.phoneNumbers.unshift(contact.phoneNumber);
+            contact.email && contactRes.emails.unshift(contact.email);
+        } else {
+            contact.phoneNumber && contactRes.phoneNumbers.push(contact.phoneNumber);
+            contact.email && contactRes.emails.push(contact.email);
+            contactRes.secondaryContactIds.push(contact.id);
+        }
+    });
+
+    return { contact: contactRes };
 }
