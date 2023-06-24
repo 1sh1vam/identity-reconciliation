@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { body } from 'express-validator';
 import { TypedRequestBody } from '../types/request';
 import { BadRequestError } from '../errors/bad-request-error';
+import { getContactRows } from '../services/identify';
 
 const router = express.Router();
 
@@ -29,9 +30,10 @@ router.post(
             throw new BadRequestError('Either email or phoneNumber is required')
         }
 
+        const existingContacts = await getContactRows(email, phoneNumber);
+
         res.status(200).send({
-            email,
-            phoneNumber
+            contacts: existingContacts
         });
     }
 );
