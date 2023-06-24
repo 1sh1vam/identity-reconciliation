@@ -2,7 +2,8 @@ import express, { Response } from 'express';
 import { body } from 'express-validator';
 import { TypedRequestBody } from '../types/request';
 import { BadRequestError } from '../errors/bad-request-error';
-import { getContactRows } from '../services/identify';
+import { getContactRows, createContact } from '../services/identify';
+import { IContactRecord } from '../types/contact';
 
 const router = express.Router();
 
@@ -32,8 +33,13 @@ router.post(
 
         const existingContacts = await getContactRows(email, phoneNumber);
 
+        let contacts: IContactRecord[] = [];
+        if (!existingContacts.length) {
+            contacts = await createContact(email, phoneNumber);
+        }
+
         res.status(200).send({
-            contacts: existingContacts
+            contacts
         });
     }
 );

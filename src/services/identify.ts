@@ -1,3 +1,4 @@
+import { ResultSetHeader } from "mysql2";
 import { db } from "../db";
 import { IContactRecord } from "../types/contact";
 
@@ -35,3 +36,19 @@ export const getContactRows = async (email?: string, phoneNumber?: number) => {
 
     return rows as IContactRecord[];
 }
+
+export const createContact = async (emailId?: string, phoneNumber?: number, linkPrecedence: IContactRecord['linkPrecedence'] = 'primary', linkedId?: number) => {
+    const queryText = `
+        INSERT INTO bite_speed.contacts (linkedId, email, phoneNumber, linkPrecedence)
+        values(?, ?, ?, ?)
+    `;
+
+    const [result] = await db.client.query(queryText, [linkedId, emailId, phoneNumber, linkPrecedence]);
+
+    const rowId = (result as ResultSetHeader).insertId;
+
+    const [rows] = await db.client.query('SELECT * FROM bite_speed.contacts where id = ?', [rowId]);
+
+    return rows as IContactRecord[];
+}
+
