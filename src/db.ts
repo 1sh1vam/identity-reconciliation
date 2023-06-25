@@ -11,12 +11,12 @@ class Database {
     return this._client;
   }
 
-  async connect(password: string) {
+  async connect(password: string = 'root@123') {
     const client = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
       database: 'bite_speed',
-      password
+      password: password
     });
 
     this._client = client;
