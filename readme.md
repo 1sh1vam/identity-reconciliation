@@ -8,7 +8,9 @@ DB_PASSWORD=""
 DB_NAME=""
 `
 
-2. Run command `npm start`
+2. Run command `npm install`
+
+3. Run command `npm start`
 
 ### Portfolio
 1. [website](https://portfolio-1sh1vam.vercel.app)
