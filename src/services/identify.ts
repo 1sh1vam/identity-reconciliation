@@ -188,5 +188,8 @@ export const constructContactResponse = (contacts: IContactRecord[]) => {
         }
     });
 
+    contactRes.emails = [...new Set(contactRes.emails)];
+    contactRes.phoneNumbers = [...new Set(contactRes.phoneNumbers)];
+
     return { contact: contactRes };
 }
