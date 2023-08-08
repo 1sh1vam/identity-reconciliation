@@ -1,10 +1,14 @@
 ### Steps to run the app
 
-1. Give the permission to the script
-`chmod +x start.sh`
+1. create a .env file directly in root directory with database config variables
+`
+DB_HOST=""
+DB_USER=""
+DB_PASSWORD=""
+DB_NAME=""
+`
 
-2. Run the script
-`./start.sh `
+2. Run command `npm start`
 
 ### Portfolio
 1. [website](https://portfolio-1sh1vam.vercel.app)
