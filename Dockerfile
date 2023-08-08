@@ -14,11 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose the ports for both MySQL and the Node.js server
-EXPOSE 3306 3000
-
-# Install and configure MySQL
-RUN apt-get update && apt-get install -y default-mysql-server
-RUN service mysql start && mysql -u root -e "CREATE DATABASE bite_speed"
+EXPOSE 3000
 
 # Start MySQL and the Node.js server
-CMD service mysql start && mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root@123';" && npm start
+CMD npm start
