@@ -5,6 +5,7 @@ import { BadRequestError } from '../errors/bad-request-error';
 import { getContactRows, createContact, manageContacts, constructContactResponse } from '../services/identify';
 import { IContactRecord } from '../types/contact';
 import { db } from '../db';
+import { validateRequest } from '../middlewares/validate-request';
 
 const router = express.Router();
 
@@ -22,9 +23,11 @@ router.post(
             .withMessage('Provide a valid email'),
         body('phoneNumber')
             .optional()
-            .isNumeric()
-            .withMessage('Phone number must be numeric')
+            .isString()
+            .isLength({ min: 10, max: 10 })
+            .withMessage('Phone number must be of 10 digits')
     ],
+    validateRequest,
     async (req: TypedRequestBody<IdentifyBodyT>, res: Response, next: NextFunction) => {
         try {
             const { email, phoneNumber } = req.body;
