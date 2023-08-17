@@ -75,16 +75,17 @@ export const turnPrimaryContactToSecondary = async (contact1: IContactRecord, co
         secondaryContact = contact1;
     }
 
-    primaryContact.linkPrecedence = 'primary';
+    primaryContact.linkPrecedence = primaryContact.linkedId ? 'secondary' : 'primary';
     secondaryContact.linkPrecedence = 'secondary';
-    secondaryContact.linkedId = contact1.id;
-    primaryContactId = contact1.id;
-    secondaryContactIds.push(contact2.id);
+    secondaryContact.linkedId = primaryContact.id;
+    primaryContactId = primaryContact.linkedId ? primaryContact.linkedId  : primaryContact.id;
+    secondaryContactIds.push(secondaryContact.id);
 
     if (removedLinkId) {
         const removedLinkPrimaryContact = contacts.find((contact) => contact.id === removedLinkId)!;
         if (new Date(removedLinkPrimaryContact.createdAt) < new Date(primaryContact.createdAt)) {
-            primaryContactId = removedLinkId;
+            primaryContactId = removedLinkPrimaryContact.linkedId ? removedLinkPrimaryContact.linkedId : removedLinkId;
+            removedLinkPrimaryContact.linkPrecedence = removedLinkPrimaryContact.linkedId ? 'secondary' : 'primary';
             primaryContact.linkPrecedence = 'secondary';
             primaryContact.linkedId = removedLinkId;
             secondaryContactIds.push(primaryContact.id)
