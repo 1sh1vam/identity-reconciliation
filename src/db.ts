@@ -22,7 +22,7 @@ class Database {
 
     await client.query(`CREATE DATABASE IF NOT EXISTS ${env.DB_NAME};`);
     await client.query(`USE ${env.DB_NAME}`);
-    await client.query('CREATE TABLE IF NOT EXISTS bite_speed.contacts (id INT PRIMARY KEY AUTO_INCREMENT, phoneNumber INT, email VARCHAR(50), linkedId INT, linkPrecedence CHAR(20), createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, deletedAt BOOLEAN)');
+    await client.query('CREATE TABLE IF NOT EXISTS bite_speed.contacts (id INT PRIMARY KEY AUTO_INCREMENT, phoneNumber VARCHAR(20), email VARCHAR(50), linkedId INT, linkPrecedence CHAR(20), createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, deletedAt BOOLEAN)');
 
     await client.end()
   }
