@@ -57,20 +57,42 @@ export const turnPrimaryContactToSecondary = async (contact1: IContactRecord, co
     const conract2CAt = new Date(contact2.createdAt);
 
     let primaryContactId: number;
-    let secondaryContactId: number;
+    const secondaryContactIds: number[] = [];
+
+    // If row being linked is already linked to some other row then store the already linked id
+    let removedLinkId: number | undefined;
+
+    let primaryContact: IContactRecord;
+    let secondaryContact: IContactRecord;
 
     if (contact1CAt < conract2CAt) {
-        contact1.linkPrecedence = 'primary';
-        contact2.linkPrecedence = 'secondary';
-        contact2.linkedId = contact1.id;
-        primaryContactId = contact1.id;
-        secondaryContactId = contact2.id;
+        removedLinkId = contact2.linkedId;
+        primaryContact = contact1;
+        secondaryContact = contact2
     } else {
-        contact2.linkPrecedence = 'primary';
-        contact1.linkPrecedence = 'secondary';
-        contact1.linkedId = contact2.id;
-        primaryContactId = contact2.id;
-        secondaryContactId = contact1.id;
+        removedLinkId = contact1.linkedId;
+        primaryContact = contact2;
+        secondaryContact = contact1;
+    }
+
+    primaryContact.linkPrecedence = 'primary';
+    secondaryContact.linkPrecedence = 'secondary';
+    secondaryContact.linkedId = contact1.id;
+    primaryContactId = contact1.id;
+    secondaryContactIds.push(contact2.id);
+
+    if (removedLinkId) {
+        const removedLinkPrimaryContact = contacts.find((contact) => contact.id === removedLinkId)!;
+        if (new Date(removedLinkPrimaryContact.createdAt) < new Date(primaryContact.createdAt)) {
+            primaryContactId = removedLinkId;
+            primaryContact.linkPrecedence = 'secondary';
+            primaryContact.linkedId = removedLinkId;
+            secondaryContactIds.push(primaryContact.id)
+        } else {
+            removedLinkPrimaryContact.linkPrecedence = 'secondary'
+            removedLinkPrimaryContact.linkedId = primaryContact.id;
+            secondaryContactIds.push(removedLinkId)
+        }
     }
 
     await db.client.beginTransaction();
@@ -80,8 +102,8 @@ export const turnPrimaryContactToSecondary = async (contact1: IContactRecord, co
         [primaryContactId]
     );
     const promise2 = db.client.query(
-        `UPDATE bite_speed.contacts SET linkPrecedence = 'secondary', linkedId = ? where id = ?`,
-        [primaryContactId, secondaryContactId]
+        `UPDATE bite_speed.contacts SET linkPrecedence = 'secondary', linkedId = ? where id in (?)`,
+        [primaryContactId, secondaryContactIds]
     )
 
     await Promise.all([promise1, promise2]);
